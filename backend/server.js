@@ -1,10 +1,10 @@
 import express from "express";
 import cors from "cors";
 import pa11y from "pa11y";
+import puppeteer from "puppeteer";
 
 const app = express();
 app.use(cors());
-
 
 app.get("/check", async (req, res) => {
   const url = req.query.url;
@@ -24,12 +24,19 @@ app.get("/check", async (req, res) => {
   }
 
   try {
+    // Starta Puppeteer med no-sandbox (krävs i Render)
+    const browser = await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
+
     const results = await Promise.race([
-      pa11y(url),
+      pa11y(url, { browser }), // använd puppeteer browser
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("timeout")), 15000)
+        setTimeout(() => reject(new Error("timeout")), 20000)
       )
     ]);
+
+    await browser.close();
 
     return res.json(results);
 
